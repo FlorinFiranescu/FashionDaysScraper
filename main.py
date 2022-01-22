@@ -19,6 +19,9 @@ class product:
     def obj2list(self):
         return [self.title, self.category, self.base_price, self.reduced_price, self.link]
 
+    def __str__(self):
+        return f"Title : {self.title}\nBase price : {self.base_price}\nReduced price : {self.reduced_price}\nLink : {self.link}\n"
+
 
 def getProductPrice(productSoup):
     # product soup is a list. On position 0, main price. On 1, <sup>price</sup>
@@ -44,8 +47,7 @@ def request2BfSoupObj(url_path ):
 
 def getNextPage(pageSoups):
     nextPageLink = None
-    if not("paginationLinkDisabled" in pageSoups['class']):
-        print(pageSoups.get_text())
+    if pageSoups.get('href'):
         nextPageLink = pageSoups['href']
     return nextPageLink
 
@@ -66,9 +68,6 @@ def gen_report_file(listOfItems, scraperType, columns, root_path):
 # Scrapers
 def fashionDaysScraper(urlPath, app_path):
     listOfProducts = []
-    fashionDays_URL = "https://www.fashiondays.ro"
-    # category_URL = "/televizoare/c"
-
     nextPageLink = urlPath
 
 
@@ -77,15 +76,14 @@ def fashionDaysScraper(urlPath, app_path):
         # Div container <=> our div containing all the products
         divContainer = soup.find('div', id="products-listing")
         nextPage = soup.find(class_="paginationNextPage")
-
         # nextPageLink = nextPage['href']
-        for product in divContainer.find('ul', id='products-listing-list').find_all('li'):
+        for singleProduct in divContainer.find('ul', id='products-listing-list').find_all('li'):
             myProduct = product()
-            myProductInfo = product.find(class_='campaign-info')
+            myProductInfo = singleProduct.find(class_='campaign-info')
             myProduct.title = myProductInfo.find(class_="product-description").get_text()
             myProduct.category = "Incaltaminte"
-            myProduct.link = product.a['href']
-            prices = product.find('span', class_="campaign-discount")
+            myProduct.link = singleProduct.a['href']
+            prices = singleProduct.find('span', class_="campaign-discount")
             oldPrice = prices.find('span', class_='no-discount')
             newPrice = prices.find('strong')
             myProduct.reduced_price = float(newPrice.get_text().split()[0])/100
@@ -96,12 +94,11 @@ def fashionDaysScraper(urlPath, app_path):
             tempList = [myProduct.title, myProduct.category, myProduct.link, myProduct.base_price,
                         myProduct.reduced_price]
             listOfProducts.append(tempList)
-            print(myProduct.title, myProduct.category, myProduct.link, myProduct.base_price,
-                  myProduct.reduced_price)
+            print(myProduct)
         nextPageLink = getNextPage(nextPage)
         time.sleep(2)
     gen_report_file(listOfItems=listOfProducts,
                     columns=['title', 'category', 'link', 'base_price', 'reduced_price'],
                     scraperType="fashionDays", root_path=app_path)
 
-fashionDaysScraper("https://www.fashiondays.ro/g/barbati-nike/incaltaminte", os.getcwd())
+fashionDaysScraper("https://www.fashiondays.ro/g/barbati-/ceasuri", os.getcwd())
