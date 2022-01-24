@@ -23,12 +23,11 @@ class product:
         return f"Title : {self.title}\nBase price : {self.base_price}\nReduced price : {self.reduced_price}\nLink : {self.link}\n"
 
 
-def getProductPrice(productSoup):
-    # product soup is a list. On position 0, main price. On 1, <sup>price</sup>
-    mainPrice = productSoup.contents[0]
-    if productSoup.sup is not None:
-        restPrice = productSoup.sup.string
-    return "{},{}".format(mainPrice, restPrice)
+def convertPrice(price):
+    if(price.find('.') != -1):
+        it = price.find('.')
+        price = price[:it] + price[it+1:]
+    return float(price) / 100
 
 
 def request2BfSoupObj(url_path ):
@@ -86,9 +85,9 @@ def fashionDaysScraper(urlPath, app_path):
             prices = singleProduct.find('span', class_="campaign-discount")
             oldPrice = prices.find('span', class_='no-discount')
             newPrice = prices.find('strong')
-            myProduct.reduced_price = float(newPrice.get_text().split()[0])/100
+            myProduct.reduced_price = convertPrice(newPrice.get_text().split()[0])
             try:
-                myProduct.base_price = float(oldPrice.get_text().split()[1]) / 100
+                myProduct.base_price = convertPrice(oldPrice.get_text().split()[1])
             except:
                 myProduct.base_price = myProduct.reduced_price
             tempList = [myProduct.title, myProduct.category, myProduct.link, myProduct.base_price,
@@ -101,4 +100,4 @@ def fashionDaysScraper(urlPath, app_path):
                     columns=['title', 'category', 'link', 'base_price', 'reduced_price'],
                     scraperType="fashionDays", root_path=app_path)
 
-fashionDaysScraper("https://www.fashiondays.ro/g/barbati-/ceasuri", os.getcwd())
+fashionDaysScraper("https://www.fashiondays.ro/g/barbati-/incaltaminte-pantofi_sport_si_tenisi", os.getcwd())
