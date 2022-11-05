@@ -24,13 +24,13 @@ class product:
 
 
 def convertPrice(price):
-    if(price.find('.') != -1):
+    if (price.find('.') != -1):
         it = price.find('.')
-        price = price[:it] + price[it+1:]
+        price = price[:it] + price[it + 1:]
     return float(price) / 100
 
 
-def request2BfSoupObj(url_path ):
+def request2BfSoupObj(url_path):
     page = requests.get(url_path)
     print("\nRequesting Page URL: {}\n".format(url_path))
     if page.status_code == 200:
@@ -49,6 +49,7 @@ def getNextPage(pageSoups):
     if pageSoups.get('href'):
         nextPageLink = pageSoups['href']
     return nextPageLink
+
 
 def gen_report_file(listOfItems, scraperType, columns, root_path):
     df = pd.DataFrame(listOfItems, columns=columns)
@@ -69,25 +70,22 @@ def fashionDaysScraper(urlPath, app_path):
     listOfProducts = []
     nextPageLink = urlPath
 
-
     while nextPageLink is not None:
         soup = request2BfSoupObj(nextPageLink)
         # Div container <=> our div containing all the products
         divContainer = soup.find('div', id="products-listing")
         nextPage = soup.find(class_="paginationNextPage")
-        # nextPageLink = nextPage['href']
         for singleProduct in divContainer.find('ul', id='products-listing-list').find_all('li'):
             myProduct = product()
-            myProductInfo = singleProduct.find(class_='campaign-info')
-            myProduct.title = myProductInfo.find(class_="product-description").get_text()
+            myProduct.title = singleProduct.find(class_="product-card-brand").get_text()
             myProduct.category = "Incaltaminte"
             myProduct.link = singleProduct.a['href']
-            prices = singleProduct.find('span', class_="campaign-discount")
-            oldPrice = prices.find('span', class_='no-discount')
-            newPrice = prices.find('strong')
+            prices = singleProduct.find('div', class_="price-block")
+            oldPrice = prices.find('span', class_='rrp-price')
+            newPrice = prices.find('span', class_='new-price')
             myProduct.reduced_price = convertPrice(newPrice.get_text().split()[0])
             try:
-                myProduct.base_price = convertPrice(oldPrice.get_text().split()[1])
+                myProduct.base_price = convertPrice(oldPrice.get_text().split()[0])
             except:
                 myProduct.base_price = myProduct.reduced_price
             tempList = [myProduct.title, myProduct.category, myProduct.link, myProduct.base_price,
@@ -99,5 +97,6 @@ def fashionDaysScraper(urlPath, app_path):
     gen_report_file(listOfItems=listOfProducts,
                     columns=['title', 'category', 'link', 'base_price', 'reduced_price'],
                     scraperType="fashionDays", root_path=app_path)
+
 
 fashionDaysScraper("https://www.fashiondays.ro/g/barbati-/incaltaminte-pantofi_sport_si_tenisi", os.getcwd())
